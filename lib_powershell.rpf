@@ -1,14 +1,15 @@
 {
-	Module Name: 	LIB POWERSHELL
-	Description:	VGL POWERSHELL LIBRARY
-	Purpose:		Library to provide easy implementation of various powershell tasks
+    Module Name:    LIB POWERSHELL
+    Description:    VGL POWERSHELL LIBRARY
+    Purpose:        Library to provide easy implementation of various powershell tasks
 
 MODIFICATION HISTORY
 ====================
 
-SM      	Reference		Date       	Name			Description												Filename
---------	-----------------	-------------	-------------	---------------------------------------------------------------	-----------------------------
-10.2		1.0				7-Oct-2014	B. vd Basch	Created													bp_castrol_import.rpf
+SM          Reference       Date            Name            Description                                                             Filename
+----------- --------------- --------------- --------------- ----------------------------------------------------------------------- -------------------
+10.2        1.0             07-Oct-2014     B. vd Basch     Created                                                                 lib_powershell.rpf
+10.2        1.1             23-Mar-2015     B. vd Basch     Changed check mechanism and added HTML support                          lib_powershell.rpf
 }
 
 
@@ -16,55 +17,62 @@ SM      	Reference		Date       	Name			Description												Filename
 ====================================}
 SET NAME "/DEFER"
 SET COMPILE_OPTION DECLARE
+ENABLE WINDOWS
 
 JOIN LIBRARY $LIB_UTILS
 JOIN STANDARD_LIBRARY STD_PROMPT
 
-DECLARE POWERSHELL_PRESENT
-
-
-{Dependencies check
-====================================}
-IF (FILE EXISTS("C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")) THEN
-	POWERSHELL_PRESENT = TRUE
-ELSE
-	POWERSHELL_PRESENT = FALSE
-ENDIF
-
-
-{Send email, no attachments
-====================================}
-GLOBAL ROUTINE PS_SENDMAIL(
-	VALUE from_mail,
-	VALUE to_mail,
-	VALUE subject_line,
-	VALUE mail_body,
-	VALUE smtp_server,
-	VALUE smtp_port,
-	VALUE smtp_user,
-	VALUE smtp_password
-)
+GLOBAL CONSTANT POWERSHELL = " C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe "
 
 DECLARE from_mail, to_mail, subject_line, mail_body
 DECLARE smtp_server, smtp_port, smtp_user, smtp_password
+DECLARE attachments
 
-IF POWERSHELL_PRESENT <> FALSE THEN
-	SEND_MAIL	=	"$msg=New-Object System.Net.Mail.Mailmessage;" :
-					"$msg.from='" : from_mail : "';" : 
-					"$msg.To.add('" : to_mail : "');" : 
-					"$msg.subject='": subject_line : "';" : 
-					"$msg.body='" : mail_body : "';" :
-					"$smtp=New-Object net.mail.smtpclient('" : smtp_server : "'," : smtp_port : ");" :
-					"$smtp.credentials=New-Object system.net.networkcredential('" : smtp_user : "','" : smtp_password : "');" :
-					"$smtp.send($msg);exit"
 
-	SPAWN "start " :ASCII(34): "SM_PS_MAIL" :ASCII(34): " C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe " :ASCII(34): SEND_MAIL :ASCII(34) NOWAIT
+{ Dependencies check
+====================================}
+GLOBAL ROUTINE CHECK_POWERSHELL(VALUE POWERSHELL_PRESENT)
+IF (FILE EXISTS(STRIP(POWERSHELL))) THEN
+	RETURN(TRUE)
+ELSE
+	RETURN(FALSE)
+ENDIF
+ENDROUTINE
+
+
+{ Send email, no attachments
+====================================}
+GLOBAL ROUTINE PS_SENDMAIL(
+    VALUE from_mail,
+    VALUE to_mail,
+    VALUE subject_line,
+    VALUE mail_body,
+    VALUE smtp_server,
+    VALUE smtp_port,
+    VALUE smtp_user,
+    VALUE smtp_password
+)
+
+DECLARE SEND_MAIL
+
+IF (CHECK_POWERSHELL("") <> FALSE) THEN
+
+    SEND_MAIL = "$msg=New-Object System.Net.Mail.Mailmessage;" :
+                "$msg.from='" : from_mail : "';" : 
+                "$msg.To.add('" : to_mail : "');" : 
+                "$msg.subject='": subject_line : "';" : 
+                "$msg.body='" : mail_body : "';" :
+                "$smtp=New-Object net.mail.smtpclient('" : smtp_server : "'," : smtp_port : ");" :
+                "$smtp.credentials=New-Object system.net.networkcredential('" : smtp_user : "','" : smtp_password : "');" :
+                "$smtp.send($msg);exit"
+
+    SPAWN "start " : ASCII(34) : "SM_PS_MAIL" : ASCII(34) : POWERSHELL : ASCII(34) : SEND_MAIL : ASCII(34) NOWAIT
 
 ENDIF
 ENDROUTINE
 
 
-{Send email, with attachments
+{ Send email, with attachment
 ====================================}
 GLOBAL ROUTINE PS_SENDMAIL_ATTACH(
 	VALUE from_mail,
@@ -78,23 +86,54 @@ GLOBAL ROUTINE PS_SENDMAIL_ATTACH(
 	VALUE attachments
 )
 
-DECLARE from_mail, to_mail, subject_line, mail_body
-DECLARE smtp_server, smtp_port, smtp_user, smtp_password
-DECLARE attachments
+DECLARE SEND_MAIL_ATT
 
-IF POWERSHELL_PRESENT <> FALSE THEN
+IF (CHECK_POWERSHELL("") <> FALSE) THEN
 
-	SEND_MAIL_ATT =	"$msg=New-Object System.Net.Mail.Mailmessage;" :
-					"$msg.from='" : from_mail : "';" : 
-					"$msg.To.add('" : to_mail : "');" : 
-					"$msg.subject='": subject_line : "';" : 
-					"$msg.body='" : mail_body : "';" :
-					"$msg.Attachments.Add('" : attachments : "');" :
-					"$smtp=New-Object net.mail.smtpclient('" : smtp_server : "'," : smtp_port : ");" :
-					"$smtp.credentials=New-Object system.net.networkcredential('" : smtp_user : "','" : smtp_password : "');" :
-					"$smtp.send($msg)"
+    SEND_MAIL_ATT = "$msg=New-Object System.Net.Mail.Mailmessage;" :
+                    "$msg.from='" : from_mail : "';" : 
+                    "$msg.To.add('" : to_mail : "');" : 
+                    "$msg.subject='": subject_line : "';" : 
+                    "$msg.body='" : mail_body : "';" :
+                    "$msg.Attachments.Add('" : attachments : "');" :
+                    "$smtp=New-Object net.mail.smtpclient('" : smtp_server : "'," : smtp_port : ");" :
+                    "$smtp.credentials=New-Object system.net.networkcredential('" : smtp_user : "','" : smtp_password : "');" :
+                    "$smtp.send($msg)"
 
-	SPAWN "start " :ASCII(34): "SM_PS_MAIL" :ASCII(34): " C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe " :ASCII(34): SEND_MAIL_ATT :ASCII(34) NOWAIT
+    SPAWN "start " : ASCII(34) : "SM_PS_MAIL" : ASCII(34) : POWERSHELL : ASCII(34) : SEND_MAIL_ATT : ASCII(34) NOWAIT
+
+ENDIF
+ENDROUTINE 
+
+
+{ Send email, body as HTML
+====================================}
+GLOBAL ROUTINE PS_SENDMAIL_HTML(
+    VALUE from_mail,
+    VALUE to_mail,
+    VALUE subject_line,
+    VALUE mail_body,
+    VALUE smtp_server,
+    VALUE smtp_port,
+    VALUE smtp_user,
+    VALUE smtp_password
+)
+
+DECLARE SEND_MAIL
+
+IF (CHECK_POWERSHELL("") <> FALSE) THEN
+
+    SEND_MAIL = "$msg=New-Object System.Net.Mail.Mailmessage;" :
+                "$msg.from='" : from_mail : "';" : 
+                "$msg.To.add('" : to_mail : "');" : 
+                "$msg.subject='": subject_line : "';" : 
+                "$msg.body='" : mail_body : "';" :
+                "$msg.IsBodyHTML=$true;" :
+                "$smtp=New-Object net.mail.smtpclient('" : smtp_server : "'," : smtp_port : ");" :
+                "$smtp.credentials=New-Object system.net.networkcredential('" : smtp_user : "','" : smtp_password : "');" :
+                "$smtp.send($msg);exit"
+
+    SPAWN "start " : ASCII(34) : "SM_PS_MAIL" : ASCII(34) : POWERSHELL : ASCII(34) : SEND_MAIL : ASCII(34) NOWAIT
 
 ENDIF
 ENDROUTINE 
