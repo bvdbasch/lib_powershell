@@ -1,8 +1,8 @@
 # LIB POWERSHELL
 
 - **Module Name:** 	LIB POWERSHELL
-  - **Description:**VGL POWERSHELL LIBRARY
-    - **Purpose:**Library to provide easy implementation of various powershell tasks
+  - **Description:** VGL POWERSHELL LIBRARY
+    - **Purpose:** Library to provide easy implementation of various powershell tasks
 
 This is a pure VGL implementation to call powershell task such as sending emails. It removes the need for third party programs like [BLAT](http://blat.net).
 
@@ -13,7 +13,7 @@ This library does not have a user interface.
 ## License
 This work is published under the [smile license](http://licence.auth0.nl "SMILE!"). The details are behind the link, but the gist of it is 
 
-> ***Do whatever you want, as long as you do something good (help someone out, smile; just be nice)***
+> ***Do whatever you want, as long as you do something good (help someone out, smile; just be nice) and please don't sue***
 
 ## Attribution	
 - *Jingyu Sung* : Original concept of powershell mail 
@@ -75,4 +75,4 @@ ps_sendmail(
 )
 ```
 
-The above example joins the powershell library, thus making it's routines available and then sends an email using the ps_sendmail routine.
+The above example joins the powershell library, thus making it's routines available and then sends an email using the `ps_sendmail` routine.
